@@ -12,5 +12,14 @@ module.exports = defineConfig({
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
-  }
+  },
+  modules : [{
+    // marketplaceModuleService: {
+    //   resolve: `${__dirname}/src/modules/marketplace`, // Path to your custom module
+    //   definition: {
+    //     isQueryable: true, // Make the service queryable
+    //   },
+    // },
+    resolve: "./src/modules/marketplace",  
+  }]
 })
