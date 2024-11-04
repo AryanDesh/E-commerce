@@ -1,9 +1,12 @@
 import { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { 
   ContainerRegistrationKeys,
+  Modules,
 } from "@medusajs/framework/utils"
 import MarketplaceModuleService from "../../../modules/marketplace/service"
 import { MARKETPLACE_MODULE } from "../../../modules/marketplace"
+import { CreateProductWorkflowInputDTO, IProductModuleService, ISalesChannelModuleService } from "@medusajs/framework/types"
+import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest,
@@ -27,4 +30,51 @@ export const GET = async (
     products: vendor.products,
   })
 
+}
+
+type RequestType = CreateProductWorkflowInputDTO
+
+export const POST = async (
+  req: AuthenticatedMedusaRequest<RequestType>,
+  res: MedusaResponse
+) => {
+  const remoteLink = req.scope.resolve("remoteLink")
+  const marketplaceModuleService: MarketplaceModuleService =  req.scope.resolve(MARKETPLACE_MODULE)
+  const productModuleService: IProductModuleService = req.scope
+    .resolve(Modules.PRODUCT)
+  const salesChannelModuleService: ISalesChannelModuleService = req.scope
+    .resolve(Modules.SALES_CHANNEL)
+  // Retrieve default sales channel to make the product available in.
+
+  // Alternatively, you can link sales channels to vendors and allow vendors
+
+  // to manage sales channels
+  const salesChannels = await salesChannelModuleService.listSalesChannels()
+  const vendorDB = await marketplaceModuleService.retrieveVendor(
+    req.auth_context.actor_id,
+  )
+  const { result } = await createProductsWorkflow(req.scope)
+  .run({
+    input: {
+      products: [{
+        ...req.body,
+        sales_channels: salesChannels,
+      }],
+    },
+  })
+
+await remoteLink.create({
+  [MARKETPLACE_MODULE]: {
+    id: vendorDB.id,
+  },
+  [Modules.PRODUCT]: {
+    product_id: result[0].id,
+  },
+})
+const product = await productModuleService.retrieveProduct(
+  result[0].id
+)
+res.json({
+  product,
+})
 }

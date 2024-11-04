@@ -22,7 +22,7 @@ export async function POST(
   if (req.auth_context.actor_id) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
-      "Request already authenticated as a manager."
+      "Request already authenticated as an admin."
     )
   }
   const { result } = await createVendorAdminWorkflow(req.scope)
